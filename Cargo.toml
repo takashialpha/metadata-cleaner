@@ -1,5 +1,5 @@
 [package]
-name = "Metadata Cleaner"
+name = "metadata_cleaner"
 version = "0.1.0"
 edition = "2024"
 
@@ -9,6 +9,7 @@ authors = ["takashialpha <takashialpha@protonmail.com>"]
 license = "Apache-2.0"
 
 [dependencies]
+rexiv2 = "0.10.0"
 
 [profile.release]
 strip = true
