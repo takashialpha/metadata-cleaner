@@ -4,17 +4,28 @@ use std::io::{self, Write};
 
 enum AppError {
     FailedReadingMetadata(rexiv2::Rexiv2Error),
+    FailedWritingMetadata(rexiv2::Rexiv2Error),
 }
 
-impl AppError {
-    fn error_msg(error: AppError) -> String {
-        match error {
-            AppError::FailedReadingMetadata(err) => format!("{}", err),
+impl fmt::Display for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AppError::FailedReadingMetadata(err) => write!(f, "Failed reading metadata: {err}"),
+            AppError::FailedWritingMetadata(err) => write!(f, "Failed writing metadata: {err}"),
         }
     }
+}
 
+impl std::fmt::Debug for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self)        
+    }
+}
+impl std::error::Error for AppError {}
+
+impl AppError {
     pub fn error_exit(error: AppError) -> ! {
-        println!("{}", Self::error_msg(error));
+        eprintln!("{}", error);
         std::process::exit(1);
     }
 }
@@ -70,6 +81,17 @@ struct MetadataInfo {
 }
 
 impl MetadataInfo {
+    fn format_tags(raw_metadata: &rexiv2::Metadata, tags: &[String]) -> Vec<String> {
+        tags.iter()
+            .map(|tag| {
+                let value = raw_metadata
+                    .get_tag_interpreted_string(tag)
+                    .unwrap_or_else(|_| "N/A".to_string());
+                format!("{tag} = {value}")
+            })
+            .collect()
+    }
+
     fn media_type(raw_metadata: &rexiv2::Metadata) -> Option<rexiv2::MediaType> {
         raw_metadata.get_media_type().ok()
     }
@@ -131,9 +153,9 @@ impl MetadataInfo {
             iso_speed: Self::iso_speed(raw_metadata),
             gps_info: Self::gps_info(raw_metadata),
             orientation: Self::orientation(raw_metadata),
-            exif_tags: Self::exif_tags(raw_metadata),
-            iptc_tags: Self::iptc_tags(raw_metadata),
-            xmp_tags: Self::xmp_tags(raw_metadata),
+            exif_tags: Self::format_tags(raw_metadata, &Self::exif_tags(raw_metadata)),
+            iptc_tags: Self::format_tags(raw_metadata, &Self::iptc_tags(raw_metadata)),
+            xmp_tags: Self::format_tags(raw_metadata, &Self::xmp_tags(raw_metadata)),
             // thumbnail: Self::thumbnail(&raw_metadata),
             // preview_images: Self::preview_images(&raw_metadata),
             // **disabled code**
@@ -146,35 +168,27 @@ impl MetadataInfo {
 
 impl fmt::Display for MetadataInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "Media Type: {}", self.media_type.as_ref().unwrap())?;
+        fn fmt_opt<T: ToString>(val: Option<T>) -> String {
+            val.map_or("N/A".to_string(), |v| v.to_string())
+        }
+
+        writeln!(
+            f,
+            "Media Type: {}",
+            self.media_type
+                .as_ref()
+                .map_or("N/A".to_string(), |v| format!("{:?}", v))
+        )?;
         writeln!(
             f,
             "Dimensions: {} x {}",
             self.pixel_width.unwrap_or(0),
             self.pixel_height.unwrap_or(0)
         )?;
-        writeln!(
-            f,
-            "Exposure Time: {}",
-            self.exposure_time
-                .map_or("N/A".to_string(), |v| v.to_string())
-        )?;
-        writeln!(
-            f,
-            "F-number: {}",
-            self.fnumber.map_or("N/A".to_string(), |v| v.to_string())
-        )?;
-        writeln!(
-            f,
-            "Focal Length: {}",
-            self.focal_length
-                .map_or("N/A".to_string(), |v| v.to_string())
-        )?;
-        writeln!(
-            f,
-            "ISO Speed: {}",
-            self.iso_speed.map_or("N/A".to_string(), |v| v.to_string())
-        )?;
+        writeln!(f, "Exposure Time: {}", fmt_opt(self.exposure_time))?;
+        writeln!(f, "F-number: {}", fmt_opt(self.fnumber))?;
+        writeln!(f, "Focal Length: {}", fmt_opt(self.focal_length))?;
+        writeln!(f, "ISO Speed: {}", fmt_opt(self.iso_speed))?;
         writeln!(f, "Orientation: {:?}", self.orientation)?;
         writeln!(f, "GPS Info: {:?}", self.gps_info)?;
         writeln!(f, "EXIF Tags: [{}]", self.exif_tags.join(", "))?;
@@ -208,7 +222,9 @@ struct MetadataWriter;
 impl MetadataWriter {
     pub fn clear_file(raw_metadata: &rexiv2::Metadata, file_path: &String) {
         raw_metadata.clear();
-        let _ = raw_metadata.save_to_file(file_path);
+        if let Err(e) = raw_metadata.save_to_file(file_path) {
+            AppError::error_exit(AppError::FailedWritingMetadata(e));
+        }
     }
 }
 
