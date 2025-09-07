@@ -6,7 +6,7 @@
 - [ ] modularize and fix the code for some metadata
 - [ ] add more files support
 - [ ] add a gtk gui
-- [ ] add workflow; to do packaging using flatpak
+- [x] add workflow
 
 ## metadata docs
 
