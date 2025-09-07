@@ -122,18 +122,18 @@ impl MetadataInfo {
 
     pub fn from(raw_metadata: &rexiv2::Metadata) -> MetadataInfo {
         MetadataInfo {
-            media_type: Self::media_type(&raw_metadata),
-            pixel_width: Self::pixel_width(&raw_metadata),
-            pixel_height: Self::pixel_height(&raw_metadata),
-            exposure_time: Self::exposure_time(&raw_metadata),
-            fnumber: Self::fnumber(&raw_metadata),
-            focal_length: Self::focal_length(&raw_metadata),
-            iso_speed: Self::iso_speed(&raw_metadata),
-            gps_info: Self::gps_info(&raw_metadata),
-            orientation: Self::orientation(&raw_metadata),
-            exif_tags: Self::exif_tags(&raw_metadata),
-            iptc_tags: Self::iptc_tags(&raw_metadata),
-            xmp_tags: Self::xmp_tags(&raw_metadata),
+            media_type: Self::media_type(raw_metadata),
+            pixel_width: Self::pixel_width(raw_metadata),
+            pixel_height: Self::pixel_height(raw_metadata),
+            exposure_time: Self::exposure_time(raw_metadata),
+            fnumber: Self::fnumber(raw_metadata),
+            focal_length: Self::focal_length(raw_metadata),
+            iso_speed: Self::iso_speed(raw_metadata),
+            gps_info: Self::gps_info(raw_metadata),
+            orientation: Self::orientation(raw_metadata),
+            exif_tags: Self::exif_tags(raw_metadata),
+            iptc_tags: Self::iptc_tags(raw_metadata),
+            xmp_tags: Self::xmp_tags(raw_metadata),
             // thumbnail: Self::thumbnail(&raw_metadata),
             // preview_images: Self::preview_images(&raw_metadata),
             // **disabled code**
@@ -191,12 +191,12 @@ struct MetadataReader {
 impl MetadataReader {
     pub fn from_path(file_path: &String) -> Result<MetadataReader, AppError> {
         Ok(MetadataReader {
-            raw_metadata: Self::load_metadata(&file_path)?,
+            raw_metadata: Self::load_metadata(file_path)?,
         })
     }
 
     fn load_metadata(file_path: &String) -> Result<rexiv2::Metadata, AppError> {
-        match rexiv2::Metadata::new_from_path(&file_path) {
+        match rexiv2::Metadata::new_from_path(file_path) {
             Ok(raw_metadata) => Ok(raw_metadata),
             Err(e) => Err(AppError::FailedReadingMetadata(e)),
         }
@@ -208,7 +208,7 @@ struct MetadataWriter;
 impl MetadataWriter {
     pub fn clear_file(raw_metadata: &rexiv2::Metadata, file_path: &String) {
         raw_metadata.clear();
-        raw_metadata.save_to_file(&file_path);
+        let _ = raw_metadata.save_to_file(file_path);
     }
 }
 
