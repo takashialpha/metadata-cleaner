@@ -3,7 +3,8 @@
 - [x] add a field in a struct for each metadata
 - [ ] detect all metadata
 - [x] add more formats support
-- [ ] modularize and fix the code for some metadata
+- [x] modularize
+- [ ] fix the code for some metadata
 - [ ] add more files support
 - [ ] add a gtk gui
 - [x] add workflow
