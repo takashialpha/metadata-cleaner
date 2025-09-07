@@ -1,8 +1,10 @@
 # TODO List
 
-- [ ] add a field in a struct for each metadata.
-- [ ] detect and show more metadata (gps, tags, etc..)
-- [ ] add feature to erase the metadata.
+- [x] add a field in a struct for each metadata
+- [ ] detect all metadata
+- [x] add more formats support
+- [ ] modularize and fix the code for some metadata
+- [ ] add more files support
 - [ ] add a gtk gui
 - [ ] add workflow; to do packaging using flatpak
 

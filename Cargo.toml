@@ -9,6 +9,8 @@ authors = ["takashialpha <takashialpha@protonmail.com>"]
 license = "Apache-2.0"
 
 [dependencies]
+num-rational = "0.4.2"
+num-traits = "0.2.19"
 rexiv2 = "0.10.0"
 
 [profile.release]
