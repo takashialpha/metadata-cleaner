@@ -10,5 +10,3 @@ impl MetadataWriter {
         }
     }
 }
-
-

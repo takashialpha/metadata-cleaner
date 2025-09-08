@@ -23,4 +23,3 @@ impl AppError {
         std::process::exit(1);
     }
 }
-

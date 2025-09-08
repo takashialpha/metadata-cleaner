@@ -15,4 +15,3 @@ impl MetadataReader {
         rexiv2::Metadata::new_from_path(file_path).map_err(AppError::FailedReadingMetadata)
     }
 }
-

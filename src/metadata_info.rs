@@ -39,9 +39,18 @@ impl MetadataInfo {
             iso_speed: raw_metadata.get_iso_speed(),
             gps_info: raw_metadata.get_gps_info(),
             orientation: Some(raw_metadata.get_orientation()),
-            exif_tags: Self::format_tags(raw_metadata, &raw_metadata.get_exif_tags().unwrap_or_default()),
-            iptc_tags: Self::format_tags(raw_metadata, &raw_metadata.get_iptc_tags().unwrap_or_default()),
-            xmp_tags: Self::format_tags(raw_metadata, &raw_metadata.get_xmp_tags().unwrap_or_default()),
+            exif_tags: Self::format_tags(
+                raw_metadata,
+                &raw_metadata.get_exif_tags().unwrap_or_default(),
+            ),
+            iptc_tags: Self::format_tags(
+                raw_metadata,
+                &raw_metadata.get_iptc_tags().unwrap_or_default(),
+            ),
+            xmp_tags: Self::format_tags(
+                raw_metadata,
+                &raw_metadata.get_xmp_tags().unwrap_or_default(),
+            ),
         }
     }
 }
@@ -52,8 +61,19 @@ impl fmt::Display for MetadataInfo {
             val.map_or("N/A".to_string(), |v| v.to_string())
         }
 
-        writeln!(f, "Media Type: {}", self.media_type.as_ref().map_or("N/A".to_string(), |v| format!("{:?}", v)))?;
-        writeln!(f, "Dimensions: {} x {}", self.pixel_width.unwrap_or(0), self.pixel_height.unwrap_or(0))?;
+        writeln!(
+            f,
+            "Media Type: {}",
+            self.media_type
+                .as_ref()
+                .map_or("N/A".to_string(), |v| format!("{:?}", v))
+        )?;
+        writeln!(
+            f,
+            "Dimensions: {} x {}",
+            self.pixel_width.unwrap_or(0),
+            self.pixel_height.unwrap_or(0)
+        )?;
         writeln!(f, "Exposure Time: {}", fmt_opt(self.exposure_time))?;
         writeln!(f, "F-number: {}", fmt_opt(self.fnumber))?;
         writeln!(f, "Focal Length: {}", fmt_opt(self.focal_length))?;
@@ -66,4 +86,3 @@ impl fmt::Display for MetadataInfo {
         Ok(())
     }
 }
-
