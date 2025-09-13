@@ -19,7 +19,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libgexiv2-dev
+          
+      - name: Install GTK, Cairo, and Pango dependencies
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libpango1.0-dev libcairo2-dev
 
+      - name: Set PKG_CONFIG_PATH (optional, usually handled automatically)
+        run: echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig" >> $GITHUB_ENV
+        
       - name: Build
         run: cargo build --verbose
 
