@@ -1,7 +1,7 @@
-use gtk4::prelude::*;
-use gtk4::{FileDialog, Window};
 use gtk4::gio::File;
 use gtk4::glib::Error;
+use gtk4::prelude::*;
+use gtk4::{FileDialog, Window};
 
 pub struct FileDialogManager;
 
@@ -12,15 +12,12 @@ impl FileDialogManager {
         dialog.set_modal(true);
 
         dialog.open(
-            None::<&Window>,      // parent window
+            None::<&Window>,                 // parent window
             None::<&gtk4::gio::Cancellable>, // cancellable
-            move |result: Result<File, Error>| {
-                match result {
-                    Ok(file) => callback(Some(file.uri().to_string())),
-                    Err(_) => callback(None),
-                }
+            move |result: Result<File, Error>| match result {
+                Ok(file) => callback(Some(file.uri().to_string())),
+                Err(_) => callback(None),
             },
         );
     }
 }
-

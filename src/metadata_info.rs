@@ -1,5 +1,7 @@
+use gtk4 as gtk;
+use gtk::prelude::*;
+use gtk::{Box as GtkBox, Label};
 use num_traits::ToPrimitive;
-use std::fmt;
 
 pub struct MetadataInfo {
     pub media_type: Option<rexiv2::MediaType>,
@@ -17,15 +19,12 @@ pub struct MetadataInfo {
 }
 
 impl MetadataInfo {
-    fn format_tags(raw_metadata: &rexiv2::Metadata, tags: &[String]) -> Vec<String> {
-        tags.iter()
-            .map(|tag| {
-                let value = raw_metadata
-                    .get_tag_interpreted_string(tag)
-                    .unwrap_or_else(|_| "N/A".to_string());
-                format!("{tag} = {value}")
-            })
-            .collect()
+    fn format_tags_list(tags: &[String]) -> String {
+        if tags.is_empty() {
+            "N/A".to_string()
+        } else {
+            tags.join(", ")
+        }
     }
 
     pub fn from(raw_metadata: &rexiv2::Metadata) -> MetadataInfo {
@@ -39,50 +38,110 @@ impl MetadataInfo {
             iso_speed: raw_metadata.get_iso_speed(),
             gps_info: raw_metadata.get_gps_info(),
             orientation: Some(raw_metadata.get_orientation()),
-            exif_tags: Self::format_tags(
-                raw_metadata,
-                &raw_metadata.get_exif_tags().unwrap_or_default(),
-            ),
-            iptc_tags: Self::format_tags(
-                raw_metadata,
-                &raw_metadata.get_iptc_tags().unwrap_or_default(),
-            ),
-            xmp_tags: Self::format_tags(
-                raw_metadata,
-                &raw_metadata.get_xmp_tags().unwrap_or_default(),
-            ),
+            exif_tags: raw_metadata
+                .get_exif_tags()
+                .unwrap_or_default()
+                .into_iter()
+                .map(|t| {
+                    raw_metadata
+                        .get_tag_interpreted_string(&t)
+                        .unwrap_or_else(|_| "N/A".to_string())
+                })
+                .collect(),
+            iptc_tags: raw_metadata
+                .get_iptc_tags()
+                .unwrap_or_default()
+                .into_iter()
+                .map(|t| {
+                    raw_metadata
+                        .get_tag_interpreted_string(&t)
+                        .unwrap_or_else(|_| "N/A".to_string())
+                })
+                .collect(),
+            xmp_tags: raw_metadata
+                .get_xmp_tags()
+                .unwrap_or_default()
+                .into_iter()
+                .map(|t| {
+                    raw_metadata
+                        .get_tag_interpreted_string(&t)
+                        .unwrap_or_else(|_| "N/A".to_string())
+                })
+                .collect(),
         }
     }
-}
 
-impl fmt::Display for MetadataInfo {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fn fmt_opt<T: ToString>(val: Option<T>) -> String {
-            val.map_or("N/A".to_string(), |v| v.to_string())
-        }
+    pub fn field_pairs(&self) -> Vec<(String, String)> {
+        let mut pairs = Vec::with_capacity(12);
 
-        writeln!(
-            f,
-            "Media Type: {}",
+        pairs.push((
+            "Media Type".to_string(),
             self.media_type
                 .as_ref()
-                .map_or("N/A".to_string(), |v| format!("{:?}", v))
-        )?;
-        writeln!(
-            f,
-            "Dimensions: {} x {}",
-            self.pixel_width.unwrap_or(0),
-            self.pixel_height.unwrap_or(0)
-        )?;
-        writeln!(f, "Exposure Time: {}", fmt_opt(self.exposure_time))?;
-        writeln!(f, "F-number: {}", fmt_opt(self.fnumber))?;
-        writeln!(f, "Focal Length: {}", fmt_opt(self.focal_length))?;
-        writeln!(f, "ISO Speed: {}", fmt_opt(self.iso_speed))?;
-        writeln!(f, "Orientation: {:?}", self.orientation)?;
-        writeln!(f, "GPS Info: {:?}", self.gps_info)?;
-        writeln!(f, "EXIF Tags: [{}]", self.exif_tags.join(", "))?;
-        writeln!(f, "IPTC Tags: [{}]", self.iptc_tags.join(", "))?;
-        writeln!(f, "XMP Tags: [{}]", self.xmp_tags.join(", "))?;
-        Ok(())
+                .map_or("N/A".to_string(), |v| format!("{:?}", v)),
+        ));
+
+        let width_str = self
+            .pixel_width
+            .map_or("N/A".to_string(), |w| w.to_string());
+        let height_str = self
+            .pixel_height
+            .map_or("N/A".to_string(), |h| h.to_string());
+        pairs.push(("Dimensions".to_string(), format!("{} x {}", width_str, height_str)));
+
+        pairs.push((
+            "Exposure Time".to_string(),
+            self.exposure_time
+                .map_or("N/A".to_string(), |v| v.to_string()),
+        ));
+        pairs.push((
+            "F-Number".to_string(),
+            self.fnumber.map_or("N/A".to_string(), |v| v.to_string()),
+        ));
+        pairs.push((
+            "Focal Length".to_string(),
+            self.focal_length
+                .map_or("N/A".to_string(), |v| v.to_string()),
+        ));
+        pairs.push((
+            "ISO Speed".to_string(),
+            self.iso_speed.map_or("N/A".to_string(), |v| v.to_string()),
+        ));
+        pairs.push((
+            "Orientation".to_string(),
+            self.orientation
+                .as_ref()
+                .map_or("N/A".to_string(), |v| format!("{:?}", v)),
+        ));
+        pairs.push((
+            "GPS Info".to_string(),
+            self.gps_info
+                .as_ref()
+                .map_or("N/A".to_string(), |v| format!("{:?}", v)),
+        ));
+
+        pairs.push(("EXIF Tags".to_string(), Self::format_tags_list(&self.exif_tags)));
+        pairs.push(("IPTC Tags".to_string(), Self::format_tags_list(&self.iptc_tags)));
+        pairs.push(("XMP Tags".to_string(), Self::format_tags_list(&self.xmp_tags)));
+
+        pairs
+    }
+
+    pub fn to_widget(&self) -> GtkBox {
+        let vbox = GtkBox::new(gtk::Orientation::Vertical, 5);
+
+        let add_label = |container: &GtkBox, key: &str, value: &str| {
+            let text = format!("{}: {}", key, value);
+            let label = Label::new(Some(&text));
+            label.set_xalign(0.0);
+            container.append(&label);
+        };
+
+        for (k, v) in self.field_pairs() {
+            add_label(&vbox, &k, &v);
+        }
+
+        vbox
     }
 }
+
