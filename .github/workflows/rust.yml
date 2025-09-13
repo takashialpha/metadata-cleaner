@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
     
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libpango1.0-dev libcairo2-dev libgraphene-1.0-dev libgexiv2-dev
+        run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev libpango1.0-dev libcairo2-dev libgraphene-1.0-dev libgexiv2-dev
 
       - name: Set PKG_CONFIG_PATH
         run: echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig" >> $GITHUB_ENV
