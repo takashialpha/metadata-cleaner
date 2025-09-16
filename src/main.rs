@@ -6,19 +6,22 @@ mod metadata_writer;
 
 use crate::file_chooser::FileDialogManager;
 use error::AppError;
+use libadwaita as adw;
+use adw::gtk;
 use gtk::prelude::*;
-use gtk::{ApplicationWindow, Box as GtkBox, Button, ScrolledWindow, glib};
-use gtk4 as gtk;
+use gtk::{ApplicationWindow, Box as GtkBox, Button, ScrolledWindow, Label, Orientation, PolicyType, HeaderBar};
 use metadata_info::MetadataInfo;
 use metadata_reader::MetadataReader;
+use gtk4::glib;
+
 
 pub struct GuiApp {
-    app: gtk::Application,
+    app: adw::Application,
 }
 
 impl GuiApp {
     pub fn new(application_id: &str) -> Self {
-        let app = gtk::Application::builder()
+        let app = adw::Application::builder()
             .application_id(application_id)
             .build();
 
@@ -29,20 +32,32 @@ impl GuiApp {
         self.app.connect_activate(|app| {
             let window = ApplicationWindow::builder()
                 .application(app)
-                .title("Metadata Cleaner")
-                .default_width(600)
-                .default_height(400)
+                .default_width(700)
+                .default_height(500)
                 .build();
 
-            let vbox = GtkBox::new(gtk::Orientation::Vertical, 5);
+            let vbox = GtkBox::new(Orientation::Vertical, 12);
+            vbox.set_margin_top(12);
+            vbox.set_margin_bottom(12);
+            vbox.set_margin_start(12);
+            vbox.set_margin_end(12);
 
-            let button = Button::with_label("Open File");
+            let button = Button::from_icon_name("document-open-symbolic");
+            button.set_tooltip_text(Some("Open an image file"));
 
-            let meta_box = GtkBox::new(gtk::Orientation::Vertical, 5);
+            let meta_box = GtkBox::new(Orientation::Vertical, 12);
             let scroll = ScrolledWindow::builder()
                 .vexpand(true)
+                .hexpand(true)
+                .hscrollbar_policy(PolicyType::Never)
+                .vscrollbar_policy(PolicyType::Automatic)
                 .child(&meta_box)
                 .build();
+
+            let header = HeaderBar::new();
+            header.set_title_widget(Some(&Label::new(Some("Metadata Cleaner"))));
+            header.pack_end(&button);
+            window.set_titlebar(Some(&header));
 
             button.connect_clicked({
                 let meta_box = meta_box.clone();
@@ -62,16 +77,17 @@ impl GuiApp {
                             let widget = fancy_meta.to_widget();
                             meta_box.append(&widget);
                         } else {
-                            let label = gtk::Label::new(Some("No file selected"));
+                            let label = Label::new(Some("No file selected"));
+                            label.set_xalign(0.0);
                             meta_box.append(&label);
                         }
                     });
                 }
             });
 
-            vbox.append(&button);
             vbox.append(&scroll);
             window.set_child(Some(&vbox));
+
             window.present();
         });
     }
@@ -86,3 +102,4 @@ fn main() {
     let gui = GuiApp::new("org.takashialpha.metadatacleaner");
     gui.run();
 }
+

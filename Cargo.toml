@@ -10,6 +10,7 @@ license = "Apache-2.0"
 
 [dependencies]
 gtk4 = { version = "0.10.0", features = ["v4_10"] }
+libadwaita = "0.8.0"
 num-rational = "0.4.2"
 num-traits = "0.2.19"
 rexiv2 = "0.10.0"
