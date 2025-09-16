@@ -25,7 +25,8 @@ jobs:
             libgraphene-1.0-dev \
             libgexiv2-dev \
             adwaita-icon-theme \
-            gnome-themes-extra
+            gnome-themes-extra \
+            libadwaita-1-dev
 
       - name: Set PKG_CONFIG_PATH
         run: echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig" >> $GITHUB_ENV
