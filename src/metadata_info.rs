@@ -1,6 +1,6 @@
-use gtk4 as gtk;
 use gtk::prelude::*;
 use gtk::{Box as GtkBox, Label};
+use gtk4 as gtk;
 use num_traits::ToPrimitive;
 
 pub struct MetadataInfo {
@@ -87,7 +87,10 @@ impl MetadataInfo {
         let height_str = self
             .pixel_height
             .map_or("N/A".to_string(), |h| h.to_string());
-        pairs.push(("Dimensions".to_string(), format!("{} x {}", width_str, height_str)));
+        pairs.push((
+            "Dimensions".to_string(),
+            format!("{} x {}", width_str, height_str),
+        ));
 
         pairs.push((
             "Exposure Time".to_string(),
@@ -120,9 +123,18 @@ impl MetadataInfo {
                 .map_or("N/A".to_string(), |v| format!("{:?}", v)),
         ));
 
-        pairs.push(("EXIF Tags".to_string(), Self::format_tags_list(&self.exif_tags)));
-        pairs.push(("IPTC Tags".to_string(), Self::format_tags_list(&self.iptc_tags)));
-        pairs.push(("XMP Tags".to_string(), Self::format_tags_list(&self.xmp_tags)));
+        pairs.push((
+            "EXIF Tags".to_string(),
+            Self::format_tags_list(&self.exif_tags),
+        ));
+        pairs.push((
+            "IPTC Tags".to_string(),
+            Self::format_tags_list(&self.iptc_tags),
+        ));
+        pairs.push((
+            "XMP Tags".to_string(),
+            Self::format_tags_list(&self.xmp_tags),
+        ));
 
         pairs
     }
@@ -134,14 +146,37 @@ impl MetadataInfo {
             let text = format!("{}: {}", key, value);
             let label = Label::new(Some(&text));
             label.set_xalign(0.0);
+            label.set_wrap(true);
+            label.set_wrap_mode(gtk::pango::WrapMode::WordChar);
             container.append(&label);
         };
 
         for (k, v) in self.field_pairs() {
-            add_label(&vbox, &k, &v);
+            match k.as_str() {
+                "EXIF Tags" | "IPTC Tags" | "XMP Tags" => {
+                    if v != "N/A" {
+                        let tags: Vec<&str> = v.split(',').map(|s| s.trim()).collect();
+                        let title = format!("{} ({})", k, tags.len());
+
+                        let expander = gtk::Expander::new(Some(&title));
+                        let inner = GtkBox::new(gtk::Orientation::Vertical, 2);
+
+                        for tag_line in tags {
+                            let label = Label::new(Some(tag_line));
+                            label.set_xalign(0.0);
+                            label.set_wrap(true);
+                            label.set_wrap_mode(gtk::pango::WrapMode::WordChar);
+                            inner.append(&label);
+                        }
+
+                        expander.set_child(Some(&inner));
+                        vbox.append(&expander);
+                    }
+                }
+                _ => add_label(&vbox, &k, &v),
+            }
         }
 
         vbox
     }
 }
-
