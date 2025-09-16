@@ -1,6 +1,8 @@
-use gtk::prelude::*;
-use gtk::{Box as GtkBox, Label};
-use gtk4 as gtk;
+use libadwaita as adw;
+
+use adw::gtk as gtk;
+use adw::gtk::prelude::*;
+use adw::gtk::{Box as GtkBox, Label};
 use num_traits::ToPrimitive;
 
 pub struct MetadataInfo {

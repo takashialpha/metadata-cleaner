@@ -5,15 +5,22 @@ mod metadata_reader;
 mod metadata_writer;
 
 use crate::file_chooser::FileDialogManager;
-use error::AppError;
+use crate::error::AppError;
 use libadwaita as adw;
-use adw::gtk;
-use gtk::prelude::*;
-use gtk::{ApplicationWindow, Box as GtkBox, Button, ScrolledWindow, Label, Orientation, PolicyType, HeaderBar};
+
+use adw::gtk::{
+    ApplicationWindow, Box as GtkBox, Button, HeaderBar, Label, Orientation, PolicyType,
+    ScrolledWindow,
+};
+
+use adw::glib;
+
+use adw::gtk::prelude::{
+    ApplicationExt, ApplicationExtManual, BoxExt, ButtonExt, GtkWindowExt, WidgetExt,
+};
+
 use metadata_info::MetadataInfo;
 use metadata_reader::MetadataReader;
-use gtk4::glib;
-
 
 pub struct GuiApp {
     app: adw::Application,
@@ -42,8 +49,8 @@ impl GuiApp {
             vbox.set_margin_start(12);
             vbox.set_margin_end(12);
 
-            let button = Button::from_icon_name("document-open-symbolic");
-            button.set_tooltip_text(Some("Open an image file"));
+            let open_button = Button::from_icon_name("document-open-symbolic");
+            open_button.set_tooltip_text(Some("Open an image file"));
 
             let meta_box = GtkBox::new(Orientation::Vertical, 12);
             let scroll = ScrolledWindow::builder()
@@ -56,10 +63,10 @@ impl GuiApp {
 
             let header = HeaderBar::new();
             header.set_title_widget(Some(&Label::new(Some("Metadata Cleaner"))));
-            header.pack_end(&button);
+            header.pack_end(&open_button);
             window.set_titlebar(Some(&header));
 
-            button.connect_clicked({
+            open_button.connect_clicked({
                 let meta_box = meta_box.clone();
                 move |_| {
                     let meta_box = meta_box.clone();
@@ -69,9 +76,10 @@ impl GuiApp {
                         }
 
                         if let Some(file) = file_option {
-                            let raw_meta = MetadataReader::from_path(&file).unwrap_or_else(|e| {
-                                AppError::error_exit(e);
-                            });
+                            let raw_meta =
+                                MetadataReader::from_path(&file).unwrap_or_else(|e| {
+                                    AppError::error_exit(e);
+                                });
 
                             let fancy_meta = MetadataInfo::from(&raw_meta.raw_metadata);
                             let widget = fancy_meta.to_widget();

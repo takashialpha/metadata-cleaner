@@ -1,7 +1,11 @@
-use gtk4::gio::File;
-use gtk4::glib::Error;
-use gtk4::prelude::*;
-use gtk4::{FileDialog, Window};
+use libadwaita as adw;
+
+use adw::gtk::gio::File;
+use adw::gtk::glib::Error;
+use adw::gtk::prelude::*;
+use adw::gtk::Window;
+
+use gtk4::FileDialog;
 
 pub struct FileDialogManager;
 
@@ -12,8 +16,8 @@ impl FileDialogManager {
         dialog.set_modal(true);
 
         dialog.open(
-            None::<&Window>,                 // parent window
-            None::<&gtk4::gio::Cancellable>, // cancellable
+            None::<&Window>,
+            None::<&adw::gio::Cancellable>,
             move |result: Result<File, Error>| match result {
                 Ok(file) => callback(Some(file.uri().to_string())),
                 Err(_) => callback(None),
