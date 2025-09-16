@@ -13,18 +13,21 @@ pub struct MetadataInfo {
     pub iso_speed: Option<i32>,
     pub gps_info: Option<rexiv2::GpsInfo>,
     pub orientation: Option<rexiv2::Orientation>,
-    pub exif_tags: Vec<String>,
-    pub iptc_tags: Vec<String>,
-    pub xmp_tags: Vec<String>,
+    pub exif_tags: Vec<(String, String)>,
+    pub iptc_tags: Vec<(String, String)>,
+    pub xmp_tags: Vec<(String, String)>,
 }
 
 impl MetadataInfo {
-    fn format_tags_list(tags: &[String]) -> String {
-        if tags.is_empty() {
-            "N/A".to_string()
-        } else {
-            tags.join(", ")
-        }
+    fn format_tags(raw_metadata: &rexiv2::Metadata, tags: &[String]) -> Vec<(String, String)> {
+        tags.iter()
+            .map(|tag| {
+                let value = raw_metadata
+                    .get_tag_interpreted_string(tag)
+                    .unwrap_or_else(|_| "N/A".to_string());
+                (tag.clone(), value)
+            })
+            .collect()
     }
 
     pub fn from(raw_metadata: &rexiv2::Metadata) -> MetadataInfo {
@@ -38,145 +41,130 @@ impl MetadataInfo {
             iso_speed: raw_metadata.get_iso_speed(),
             gps_info: raw_metadata.get_gps_info(),
             orientation: Some(raw_metadata.get_orientation()),
-            exif_tags: raw_metadata
-                .get_exif_tags()
-                .unwrap_or_default()
-                .into_iter()
-                .map(|t| {
-                    raw_metadata
-                        .get_tag_interpreted_string(&t)
-                        .unwrap_or_else(|_| "N/A".to_string())
-                })
-                .collect(),
-            iptc_tags: raw_metadata
-                .get_iptc_tags()
-                .unwrap_or_default()
-                .into_iter()
-                .map(|t| {
-                    raw_metadata
-                        .get_tag_interpreted_string(&t)
-                        .unwrap_or_else(|_| "N/A".to_string())
-                })
-                .collect(),
-            xmp_tags: raw_metadata
-                .get_xmp_tags()
-                .unwrap_or_default()
-                .into_iter()
-                .map(|t| {
-                    raw_metadata
-                        .get_tag_interpreted_string(&t)
-                        .unwrap_or_else(|_| "N/A".to_string())
-                })
-                .collect(),
+            exif_tags: Self::format_tags(
+                raw_metadata,
+                &raw_metadata.get_exif_tags().unwrap_or_default(),
+            ),
+            iptc_tags: Self::format_tags(
+                raw_metadata,
+                &raw_metadata.get_iptc_tags().unwrap_or_default(),
+            ),
+            xmp_tags: Self::format_tags(
+                raw_metadata,
+                &raw_metadata.get_xmp_tags().unwrap_or_default(),
+            ),
         }
     }
 
-    pub fn field_pairs(&self) -> Vec<(String, String)> {
-        let mut pairs = Vec::with_capacity(12);
+    pub fn to_widget(&self) -> gtk::ScrolledWindow {
+        let scrolled = gtk::ScrolledWindow::new();
+        scrolled.set_policy(gtk::PolicyType::Automatic, gtk::PolicyType::Automatic);
+        scrolled.set_min_content_height(500);
+        scrolled.set_min_content_width(700);
 
-        pairs.push((
-            "Media Type".to_string(),
-            self.media_type
-                .as_ref()
-                .map_or("N/A".to_string(), |v| format!("{:?}", v)),
-        ));
+        let outer = GtkBox::new(gtk::Orientation::Vertical, 16);
+        outer.set_margin_top(16);
+        outer.set_margin_bottom(16);
+        outer.set_margin_start(16);
+        outer.set_margin_end(16);
 
-        let width_str = self
-            .pixel_width
-            .map_or("N/A".to_string(), |w| w.to_string());
-        let height_str = self
-            .pixel_height
-            .map_or("N/A".to_string(), |h| h.to_string());
-        pairs.push((
-            "Dimensions".to_string(),
-            format!("{} x {}", width_str, height_str),
-        ));
+        let general_frame = gtk::Frame::new(Some("General Info"));
+        let grid = gtk::Grid::new();
+        grid.set_row_spacing(6);
+        grid.set_column_spacing(12);
+        grid.set_margin_top(8);
+        grid.set_margin_bottom(8);
+        grid.set_margin_start(8);
+        grid.set_margin_end(8);
 
-        pairs.push((
-            "Exposure Time".to_string(),
-            self.exposure_time
-                .map_or("N/A".to_string(), |v| v.to_string()),
-        ));
-        pairs.push((
-            "F-Number".to_string(),
-            self.fnumber.map_or("N/A".to_string(), |v| v.to_string()),
-        ));
-        pairs.push((
-            "Focal Length".to_string(),
-            self.focal_length
-                .map_or("N/A".to_string(), |v| v.to_string()),
-        ));
-        pairs.push((
-            "ISO Speed".to_string(),
-            self.iso_speed.map_or("N/A".to_string(), |v| v.to_string()),
-        ));
-        pairs.push((
-            "Orientation".to_string(),
-            self.orientation
-                .as_ref()
-                .map_or("N/A".to_string(), |v| format!("{:?}", v)),
-        ));
-        pairs.push((
-            "GPS Info".to_string(),
-            self.gps_info
-                .as_ref()
-                .map_or("N/A".to_string(), |v| format!("{:?}", v)),
-        ));
+        let mut row = 0;
+        let add_row = |grid: &gtk::Grid, r: &mut i32, key: &str, val: String| {
+            let key_label = Label::new(None);
+            key_label.set_markup(&format!("<b>{}</b>", key));
+            key_label.set_xalign(0.0);
 
-        pairs.push((
-            "EXIF Tags".to_string(),
-            Self::format_tags_list(&self.exif_tags),
-        ));
-        pairs.push((
-            "IPTC Tags".to_string(),
-            Self::format_tags_list(&self.iptc_tags),
-        ));
-        pairs.push((
-            "XMP Tags".to_string(),
-            Self::format_tags_list(&self.xmp_tags),
-        ));
+            let val_label = Label::new(Some(&val));
+            val_label.set_xalign(0.0);
+            val_label.set_wrap(true);
+            val_label.set_wrap_mode(gtk::pango::WrapMode::WordChar);
 
-        pairs
-    }
-
-    pub fn to_widget(&self) -> GtkBox {
-        let vbox = GtkBox::new(gtk::Orientation::Vertical, 5);
-
-        let add_label = |container: &GtkBox, key: &str, value: &str| {
-            let text = format!("{}: {}", key, value);
-            let label = Label::new(Some(&text));
-            label.set_xalign(0.0);
-            label.set_wrap(true);
-            label.set_wrap_mode(gtk::pango::WrapMode::WordChar);
-            container.append(&label);
+            grid.attach(&key_label, 0, *r, 1, 1);
+            grid.attach(&val_label, 1, *r, 1, 1);
+            *r += 1;
         };
 
-        for (k, v) in self.field_pairs() {
-            match k.as_str() {
-                "EXIF Tags" | "IPTC Tags" | "XMP Tags" => {
-                    if v != "N/A" {
-                        let tags: Vec<&str> = v.split(',').map(|s| s.trim()).collect();
-                        let title = format!("{} ({})", k, tags.len());
-
-                        let expander = gtk::Expander::new(Some(&title));
-                        let inner = GtkBox::new(gtk::Orientation::Vertical, 2);
-
-                        for tag_line in tags {
-                            let label = Label::new(Some(tag_line));
-                            label.set_xalign(0.0);
-                            label.set_wrap(true);
-                            label.set_wrap_mode(gtk::pango::WrapMode::WordChar);
-                            inner.append(&label);
-                        }
-
-                        expander.set_child(Some(&inner));
-                        vbox.append(&expander);
-                    }
-                }
-                _ => add_label(&vbox, &k, &v),
-            }
+        add_row(
+            &grid,
+            &mut row,
+            "Media Type",
+            self.media_type
+                .as_ref()
+                .map(|v| format!("{:?}", v))
+                .unwrap_or("N/A".to_string()),
+        );
+        add_row(
+            &grid,
+            &mut row,
+            "Dimensions",
+            format!(
+                "{} x {}",
+                self.pixel_width.unwrap_or(0),
+                self.pixel_height.unwrap_or(0)
+            ),
+        );
+        if let Some(val) = self.exposure_time {
+            add_row(&grid, &mut row, "Exposure Time", val.to_string());
+        }
+        if let Some(val) = self.fnumber {
+            add_row(&grid, &mut row, "F-Number", val.to_string());
+        }
+        if let Some(val) = self.focal_length {
+            add_row(&grid, &mut row, "Focal Length", val.to_string());
+        }
+        if let Some(val) = self.iso_speed {
+            add_row(&grid, &mut row, "ISO Speed", val.to_string());
+        }
+        if let Some(val) = &self.orientation {
+            add_row(&grid, &mut row, "Orientation", format!("{:?}", val));
+        }
+        if let Some(val) = &self.gps_info {
+            add_row(&grid, &mut row, "GPS Info", format!("{:?}", val));
         }
 
-        vbox
+        general_frame.set_child(Some(&grid));
+        outer.append(&general_frame);
+
+        let add_tag_section = |outer: &GtkBox, title: &str, tags: &[(String, String)]| {
+            if !tags.is_empty() {
+                let frame = gtk::Frame::new(Some(title));
+                frame.set_margin_top(8);
+
+                let expander = gtk::Expander::new(Some(&format!("{} ({})", title, tags.len())));
+                let listbox = gtk::ListBox::new();
+
+                for (tag, value) in tags {
+                    let row_label = Label::new(None);
+                    row_label.set_markup(&format!("<tt>{}</tt> = {}", tag, value));
+                    row_label.set_xalign(0.0);
+                    row_label.set_wrap(true);
+                    row_label.set_wrap_mode(gtk::pango::WrapMode::WordChar);
+
+                    let row = gtk::ListBoxRow::new();
+                    row.set_child(Some(&row_label));
+                    listbox.append(&row);
+                }
+
+                expander.set_child(Some(&listbox));
+                frame.set_child(Some(&expander));
+                outer.append(&frame);
+            }
+        };
+
+        add_tag_section(&outer, "EXIF Tags", &self.exif_tags);
+        add_tag_section(&outer, "IPTC Tags", &self.iptc_tags);
+        add_tag_section(&outer, "XMP Tags", &self.xmp_tags);
+
+        scrolled.set_child(Some(&outer));
+        scrolled
     }
 }
