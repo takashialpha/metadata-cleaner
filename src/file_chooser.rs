@@ -1,9 +1,9 @@
 use libadwaita as adw;
 
+use adw::gtk::Window;
 use adw::gtk::gio::File;
 use adw::gtk::glib::Error;
 use adw::gtk::prelude::*;
-use adw::gtk::Window;
 
 use gtk4::FileDialog;
 

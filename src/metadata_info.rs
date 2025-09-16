@@ -1,6 +1,6 @@
 use libadwaita as adw;
 
-use adw::gtk as gtk;
+use adw::gtk;
 use adw::gtk::prelude::*;
 use adw::gtk::{Box as GtkBox, Label};
 use num_traits::ToPrimitive;
